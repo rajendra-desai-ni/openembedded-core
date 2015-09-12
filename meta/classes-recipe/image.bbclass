@@ -87,6 +87,8 @@ PACKAGE_INSTALL_ATTEMPTONLY ?= "${FEATURE_INSTALL_OPTIONAL}"
 
 IMGDEPLOYDIR = "${WORKDIR}/deploy-${PN}-image-complete"
 
+export PACKAGE_INSTALL_NODEPS ?= ""
+
 # Images are generally built explicitly, do not need to be part of world.
 EXCLUDE_FROM_WORLD = "1"
 
@@ -248,6 +250,7 @@ fakeroot python do_rootfs () {
     # may have occurred.
     pn = d.getVar('PN')
     oe.packagedata.runtime_mapping_rename("PACKAGE_INSTALL", pn, d)
+    oe.packagedata.runtime_mapping_rename("PACKAGE_INSTALL_NODEPS", pn, d)
     oe.packagedata.runtime_mapping_rename("PACKAGE_INSTALL_ATTEMPTONLY", pn, d)
     oe.packagedata.runtime_mapping_rename("BAD_RECOMMENDATIONS", pn, d)
 
