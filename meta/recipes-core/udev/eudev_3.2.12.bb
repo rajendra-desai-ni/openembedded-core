@@ -12,6 +12,7 @@ PROVIDES = "udev"
 SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/${BP}.tar.gz \
            file://init \
            file://local.rules \
+           file://0001-udev-builtin-net_id-Allow-acpi_index-and-index-to-be.patch \
            file://0001-Export-dummies-for.patch \
            file://0002-Bump-udev-version-to-251.patch \
            "
