@@ -31,6 +31,8 @@ CVE_PRODUCT = "git-scm:git"
 # in mirrored git repos. Most OE users wouldn't build the docs and
 # we don't see this as a major issue for our general users/usecases.
 CVE_CHECK_IGNORE += "CVE-2022-24975"
+# This is specific to Git-for-Windows
+CVE_CHECK_IGNORE += "CVE-2022-41953"
 
 PACKAGECONFIG ??= "expat curl"
 PACKAGECONFIG[cvsserver] = ""
@@ -165,4 +167,4 @@ EXTRA_OECONF += "ac_cv_snprintf_returns_bogus=no \
                  "
 EXTRA_OEMAKE += "NO_GETTEXT=1"
 
-SRC_URI[tarball.sha256sum] = "2cca63fe7bebb5b4bf8efea7b46b12bb89c16ff9711b6b6d845928501d00d0a3"
+SRC_URI[tarball.sha256sum] = "fc849272a95cc7457091221a645fcd753b3b1984767ee3323fb6a0aa944bbcb4"
