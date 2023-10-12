@@ -1,6 +1,7 @@
 KBRANCH ?= "v5.10/standard/base"
 
 require recipes-kernel/linux/linux-yocto.inc
+include cve-exclusion_5.10.inc
 
 # board specific branches
 KBRANCH:qemuarm  ?= "v5.10/standard/arm-versatile-926ejs"
@@ -13,23 +14,23 @@ KBRANCH:qemux86  ?= "v5.10/standard/base"
 KBRANCH:qemux86-64 ?= "v5.10/standard/base"
 KBRANCH:qemumips64 ?= "v5.10/standard/mti-malta64"
 
-SRCREV_machine:qemuarm ?= "08e7e91e009a1d738962de06f48f9704075d3a56"
-SRCREV_machine:qemuarm64 ?= "f23a4523287d5199b67a135e5d1cf3680fe58a3a"
-SRCREV_machine:qemumips ?= "82bae5b9d4316474df162ca7e5a2dff35c4ede39"
-SRCREV_machine:qemuppc ?= "8b5027212160436c9d466b80e0c385f265acfbdb"
-SRCREV_machine:qemuriscv64 ?= "dafc025b033585311d1693255c80b60b690b0e54"
-SRCREV_machine:qemuriscv32 ?= "dafc025b033585311d1693255c80b60b690b0e54"
-SRCREV_machine:qemux86 ?= "dafc025b033585311d1693255c80b60b690b0e54"
-SRCREV_machine:qemux86-64 ?= "dafc025b033585311d1693255c80b60b690b0e54"
-SRCREV_machine:qemumips64 ?= "ee18c4343db52d5846a0f332cd6df26a6f72dd45"
-SRCREV_machine ?= "dafc025b033585311d1693255c80b60b690b0e54"
-SRCREV_meta ?= "c1168e10ecf30b123a341ca500966eebf3fe2cc2"
+SRCREV_machine:qemuarm ?= "28db2d5b2451e2c6b055dcd65bbe2fa581fa1538"
+SRCREV_machine:qemuarm64 ?= "3f6544c8ee1330484b5c341dcac662ef73836a0e"
+SRCREV_machine:qemumips ?= "7643ee350375086f23ddffbe1613150ce988dce5"
+SRCREV_machine:qemuppc ?= "9320f948b72a073ab0c27f0ca884842bb8eed036"
+SRCREV_machine:qemuriscv64 ?= "4eedb5d32121ace6ad137e7d01b22f94c592923e"
+SRCREV_machine:qemuriscv32 ?= "4eedb5d32121ace6ad137e7d01b22f94c592923e"
+SRCREV_machine:qemux86 ?= "4eedb5d32121ace6ad137e7d01b22f94c592923e"
+SRCREV_machine:qemux86-64 ?= "4eedb5d32121ace6ad137e7d01b22f94c592923e"
+SRCREV_machine:qemumips64 ?= "a3f4193c0ed91cbcfaed2e6cc984eb4906e511e0"
+SRCREV_machine ?= "4eedb5d32121ace6ad137e7d01b22f94c592923e"
+SRCREV_meta ?= "080adc96faafd98d2370b009338fcad42cf8e5fd"
 
 SRC_URI = "git://git.yoctoproject.org/linux-yocto.git;name=machine;branch=${KBRANCH}; \
            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-5.10;destsuffix=${KMETA}"
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION ?= "5.10.185"
+LINUX_VERSION ?= "5.10.197"
 
 DEPENDS += "${@bb.utils.contains('ARCH', 'x86', 'elfutils-native', '', d)}"
 DEPENDS += "openssl-native util-linux-native"
