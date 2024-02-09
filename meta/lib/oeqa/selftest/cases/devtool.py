@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 #
 
+import errno
 import os
 import re
 import shutil
@@ -54,7 +55,7 @@ def setUpModule():
             result = runCmd('git rev-parse --show-toplevel', cwd=canonical_layerpath)
             oldreporoot = result.output.rstrip()
             newmetapath = os.path.join(corecopydir, os.path.relpath(oldmetapath, oldreporoot))
-            runCmd('git clone %s %s' % (oldreporoot, corecopydir), cwd=templayerdir)
+            runCmd('git clone file://%s %s' % (oldreporoot, corecopydir), cwd=templayerdir)
             # Now we need to copy any modified files
             # You might ask "why not just copy the entire tree instead of
             # cloning and doing this?" - well, the problem with that is
@@ -543,7 +544,7 @@ class DevtoolAddTests(DevtoolBase):
         self.track_for_cleanup(self.workspacedir)
         self.add_command_to_tearDown('bitbake -c cleansstate %s' % testrecipe)
         self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
-        result = runCmd('devtool add %s %s -f %s' % (testrecipe, srcdir, url))
+        result = runCmd('devtool add --no-pypi %s %s -f %s' % (testrecipe, srcdir, url))
         self.assertExists(os.path.join(self.workspacedir, 'conf', 'layer.conf'), 'Workspace directory not created. %s' % result.output)
         self.assertTrue(os.path.isfile(os.path.join(srcdir, 'setup.py')), 'Unable to find setup.py in source directory')
         self.assertTrue(os.path.isdir(os.path.join(srcdir, '.git')), 'git repository for external source tree was not created')
@@ -562,7 +563,7 @@ class DevtoolAddTests(DevtoolBase):
         result = runCmd('devtool reset -n %s' % testrecipe)
         shutil.rmtree(srcdir)
         fakever = '1.9'
-        result = runCmd('devtool add %s %s -f %s -V %s' % (testrecipe, srcdir, url, fakever))
+        result = runCmd('devtool add --no-pypi %s %s -f %s -V %s' % (testrecipe, srcdir, url, fakever))
         self.assertTrue(os.path.isfile(os.path.join(srcdir, 'setup.py')), 'Unable to find setup.py in source directory')
         # Test devtool status
         result = runCmd('devtool status')
@@ -916,6 +917,28 @@ class DevtoolModifyTests(DevtoolBase):
         # Try building
         bitbake(testrecipe)
 
+    def test_devtool_modify_git_no_extract(self):
+        # Check preconditions
+        testrecipe = 'psplash'
+        src_uri = get_bb_var('SRC_URI', testrecipe)
+        self.assertIn('git://', src_uri, 'This test expects the %s recipe to be a git recipe' % testrecipe)
+        # Clean up anything in the workdir/sysroot/sstate cache
+        bitbake('%s -c cleansstate' % testrecipe)
+        # Try modifying a recipe
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        self.track_for_cleanup(self.workspacedir)
+        self.add_command_to_tearDown('bitbake -c clean %s' % testrecipe)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        result = runCmd('git clone https://git.yoctoproject.org/psplash %s && devtool modify -n %s %s' % (tempdir, testrecipe, tempdir))
+        self.assertExists(os.path.join(self.workspacedir, 'conf', 'layer.conf'), 'Workspace directory not created. devtool output: %s' % result.output)
+        matches = glob.glob(os.path.join(self.workspacedir, 'appends', 'psplash_*.bbappend'))
+        self.assertTrue(matches, 'bbappend not created')
+        # Test devtool status
+        result = runCmd('devtool status')
+        self.assertIn(testrecipe, result.output)
+        self.assertIn(tempdir, result.output)
+
     def test_devtool_modify_git_crates_subpath(self):
         # This tests two things in devtool context:
         #   - that we support local git dependencies for cargo based recipe
@@ -927,7 +950,7 @@ class DevtoolModifyTests(DevtoolBase):
         #    some crate:// in SRC_URI
         #    others git:// in SRC_URI
         #    cointains a patch
-        testrecipe = 'zvariant'
+        testrecipe = 'hello-rs'
         bb_vars = get_bb_vars(['SRC_URI', 'FILE', 'WORKDIR', 'CARGO_HOME'], testrecipe)
         recipefile = bb_vars['FILE']
         workdir = bb_vars['WORKDIR']
@@ -939,7 +962,7 @@ class DevtoolModifyTests(DevtoolBase):
                       'This test expects the %s recipe to have a git uri with subpath' % testrecipe)
         self.assertTrue(any([uri.startswith('crate://') for uri in src_uri]),
                         'This test expects the %s recipe to have some crates in its src uris' % testrecipe)
-        self.assertGreater(sum(map(lambda x:x.startswith('git://'), src_uri)), 2,
+        self.assertGreaterEqual(sum(map(lambda x:x.startswith('git://'), src_uri)), 2,
                            'This test expects the %s recipe to have several git:// uris' % testrecipe)
         self.assertTrue(any([uri.startswith('file://') and '.patch' in uri for uri in src_uri]),
                         'This test expects the %s recipe to have a patch in its src uris' % testrecipe)
@@ -957,7 +980,7 @@ class DevtoolModifyTests(DevtoolBase):
         result = runCmd('devtool modify %s -x %s' % (testrecipe, tempdir))
         self.assertExists(os.path.join(tempdir, 'Cargo.toml'), 'Extracted source could not be found')
         self.assertExists(os.path.join(self.workspacedir, 'conf', 'layer.conf'), 'Workspace directory not created. devtool output: %s' % result.output)
-        matches = glob.glob(os.path.join(self.workspacedir, 'appends', 'zvariant_*.bbappend'))
+        matches = glob.glob(os.path.join(self.workspacedir, 'appends', '%s_*.bbappend' % testrecipe))
         self.assertTrue(matches, 'bbappend not created')
         # Test devtool status
         result = runCmd('devtool status')
@@ -1074,7 +1097,7 @@ class DevtoolModifyTests(DevtoolBase):
             runCmd('git -C %s checkout %s' % (tempdir, branch))
             with open(source, "rt") as f:
                 content = f.read()
-            self.assertEquals(content, expected)
+            self.assertEqual(content, expected)
         if self.td["MACHINE"] == "qemux86":
             check('devtool', 'This is a test for qemux86\n')
         elif self.td["MACHINE"] == "qemuarm":
@@ -1084,6 +1107,32 @@ class DevtoolModifyTests(DevtoolBase):
         check('devtool-no-overrides', 'This is a test for something\n')
         check('devtool-override-qemuarm', 'This is a test for qemuarm\n')
         check('devtool-override-qemux86', 'This is a test for qemux86\n')
+
+    def test_devtool_modify_multiple_sources(self):
+        # This test check that recipes fetching several sources can be used with devtool modify/build
+        # Check preconditions
+        testrecipe = 'bzip2'
+        src_uri = get_bb_var('SRC_URI', testrecipe)
+        src1 = 'https://' in src_uri
+        src2 = 'git://' in src_uri
+        self.assertTrue(src1 and src2, 'This test expects the %s recipe to fetch both a git source and a tarball and it seems that it no longer does' % testrecipe)
+        # Clean up anything in the workdir/sysroot/sstate cache
+        bitbake('%s -c cleansstate' % testrecipe)
+        # Try modifying a recipe
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        self.track_for_cleanup(self.workspacedir)
+        self.add_command_to_tearDown('bitbake -c clean %s' % testrecipe)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        result = runCmd('devtool modify %s -x %s' % (testrecipe, tempdir))
+        self.assertEqual(result.status, 0, "Could not modify recipe %s. Output: %s" % (testrecipe, result.output))
+        # Test devtool status
+        result = runCmd('devtool status')
+        self.assertIn(testrecipe, result.output)
+        self.assertIn(tempdir, result.output)
+        # Try building
+        result = bitbake(testrecipe)
+        self.assertEqual(result.status, 0, "Bitbake failed, exit code %s, output %s" % (result.status, result.output))
 
 class DevtoolUpdateTests(DevtoolBase):
 
@@ -1495,7 +1544,7 @@ class DevtoolUpdateTests(DevtoolBase):
         # Modify one file
         srctree = os.path.join(self.workspacedir, 'sources', testrecipe)
         runCmd('echo "Another line" >> README', cwd=srctree)
-        runCmd('git commit -a --amend --no-edit', cwd=srctree)
+        runCmd('git commit -a --amend --no-edit --no-verify', cwd=srctree)
         self.add_command_to_tearDown('cd %s; rm %s/*; git checkout %s %s' % (os.path.dirname(recipefile), testrecipe, testrecipe, os.path.basename(recipefile)))
         result = runCmd('devtool update-recipe %s' % testrecipe)
         expected_status = [(' M', '.*/%s/readme.patch.gz$' % testrecipe)]
@@ -1598,6 +1647,53 @@ class DevtoolUpdateTests(DevtoolBase):
         # Try building
         bitbake('%s -c patch' % testrecipe)
 
+    def test_devtool_git_submodules(self):
+        # This tests if we can add a patch in a git submodule and extract it properly using devtool finish
+        # Check preconditions
+        self.assertTrue(not os.path.exists(self.workspacedir), 'This test cannot be run with a workspace directory under the build directory')
+        self.track_for_cleanup(self.workspacedir)
+        recipe = 'vulkan-samples'
+        src_uri = get_bb_var('SRC_URI', recipe)
+        self.assertIn('gitsm://', src_uri, 'This test expects the %s recipe to be a git recipe with submodules' % recipe)
+        oldrecipefile = get_bb_var('FILE', recipe)
+        recipedir = os.path.dirname(oldrecipefile)
+        result = runCmd('git status --porcelain .', cwd=recipedir)
+        if result.output.strip():
+            self.fail('Recipe directory for %s contains uncommitted changes' % recipe)
+        self.assertIn('/meta/', recipedir)
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        result = runCmd('devtool modify %s %s' % (recipe, tempdir))
+        self.assertExists(os.path.join(tempdir, 'CMakeLists.txt'), 'Extracted source could not be found')
+        # Test devtool status
+        result = runCmd('devtool status')
+        self.assertIn(recipe, result.output)
+        self.assertIn(tempdir, result.output)
+        # Modify a source file in a submodule, (grab the first one)
+        result = runCmd('git submodule --quiet foreach \'echo $sm_path\'', cwd=tempdir)
+        submodule = result.output.splitlines()[0]
+        submodule_path = os.path.join(tempdir, submodule)
+        runCmd('echo "#This is a first comment" >> testfile', cwd=submodule_path)
+        result = runCmd('git status --porcelain . ', cwd=submodule_path)
+        self.assertIn("testfile", result.output)
+        runCmd('git add testfile; git commit -m "Adding a new file"', cwd=submodule_path)
+
+        # Try finish to the original layer
+        self.add_command_to_tearDown('rm -rf %s ; cd %s ; git checkout %s' % (recipedir, os.path.dirname(recipedir), recipedir))
+        runCmd('devtool finish -f %s meta' % recipe)
+        result = runCmd('devtool status')
+        self.assertNotIn(recipe, result.output, 'Recipe should have been reset by finish but wasn\'t')
+        self.assertNotExists(os.path.join(self.workspacedir, 'recipes', recipe), 'Recipe directory should not exist after finish')
+        expected_status = [(' M', '.*/%s$' % os.path.basename(oldrecipefile)),
+                           ('??', '.*/.*-Adding-a-new-file.patch$')]
+        self._check_repo_status(recipedir, expected_status)
+        # Make sure the patch is added to the recipe with the correct "patchdir" option
+        result = runCmd('git diff .', cwd=recipedir)
+        addlines = [
+           'file://0001-Adding-a-new-file.patch;patchdir=%s \\\\' % submodule
+        ]
+        self._check_diff(result.output, addlines, [])
 
 class DevtoolExtractTests(DevtoolBase):
 
@@ -1835,6 +1931,54 @@ class DevtoolUpgradeTests(DevtoolBase):
         self.assertNotIn(recipe, result.output)
         self.assertNotExists(os.path.join(self.workspacedir, 'recipes', recipe), 'Recipe directory should not exist after resetting')
 
+    def test_devtool_upgrade_drop_md5sum(self):
+        # Check preconditions
+        self.assertTrue(not os.path.exists(self.workspacedir), 'This test cannot be run with a workspace directory under the build directory')
+        self.track_for_cleanup(self.workspacedir)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        # For the moment, we are using a real recipe.
+        recipe = 'devtool-upgrade-test3'
+        version = '1.6.0'
+        oldrecipefile = get_bb_var('FILE', recipe)
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        # Check upgrade. Code does not check if new PV is older or newer that current PV, so, it may be that
+        # we are downgrading instead of upgrading.
+        result = runCmd('devtool upgrade %s %s -V %s' % (recipe, tempdir, version))
+        # Check new recipe file is present
+        newrecipefile = os.path.join(self.workspacedir, 'recipes', recipe, '%s_%s.bb' % (recipe, version))
+        self.assertExists(newrecipefile, 'Recipe file should exist after upgrade')
+        # Check recipe got changed as expected
+        with open(oldrecipefile + '.upgraded', 'r') as f:
+            desiredlines = f.readlines()
+        with open(newrecipefile, 'r') as f:
+            newlines = f.readlines()
+        self.assertEqual(desiredlines, newlines)
+
+    def test_devtool_upgrade_all_checksums(self):
+        # Check preconditions
+        self.assertTrue(not os.path.exists(self.workspacedir), 'This test cannot be run with a workspace directory under the build directory')
+        self.track_for_cleanup(self.workspacedir)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        # For the moment, we are using a real recipe.
+        recipe = 'devtool-upgrade-test4'
+        version = '1.6.0'
+        oldrecipefile = get_bb_var('FILE', recipe)
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        # Check upgrade. Code does not check if new PV is older or newer that current PV, so, it may be that
+        # we are downgrading instead of upgrading.
+        result = runCmd('devtool upgrade %s %s -V %s' % (recipe, tempdir, version))
+        # Check new recipe file is present
+        newrecipefile = os.path.join(self.workspacedir, 'recipes', recipe, '%s_%s.bb' % (recipe, version))
+        self.assertExists(newrecipefile, 'Recipe file should exist after upgrade')
+        # Check recipe got changed as expected
+        with open(oldrecipefile + '.upgraded', 'r') as f:
+            desiredlines = f.readlines()
+        with open(newrecipefile, 'r') as f:
+            newlines = f.readlines()
+        self.assertEqual(desiredlines, newlines)
+
     def test_devtool_layer_plugins(self):
         """Test that devtool can use plugins from other layers.
 
@@ -1853,7 +1997,15 @@ class DevtoolUpgradeTests(DevtoolBase):
         for p in paths:
             dstdir = os.path.join(dstdir, p)
             if not os.path.exists(dstdir):
-                os.makedirs(dstdir)
+                try:
+                    os.makedirs(dstdir)
+                except PermissionError:
+                    return False
+                except OSError as e:
+                    if e.errno == errno.EROFS:
+                        return False
+                    else:
+                        raise e
                 if p == "lib":
                     # Can race with other tests
                     self.add_command_to_tearDown('rmdir --ignore-fail-on-non-empty %s' % dstdir)
@@ -1861,8 +2013,12 @@ class DevtoolUpgradeTests(DevtoolBase):
                     self.track_for_cleanup(dstdir)
         dstfile = os.path.join(dstdir, os.path.basename(srcfile))
         if srcfile != dstfile:
-            shutil.copy(srcfile, dstfile)
+            try:
+                shutil.copy(srcfile, dstfile)
+            except PermissionError:
+                return False
             self.track_for_cleanup(dstfile)
+        return True
 
     def test_devtool_load_plugin(self):
         """Test that devtool loads only the first found plugin in BBPATH."""
@@ -1880,15 +2036,17 @@ class DevtoolUpgradeTests(DevtoolBase):
             plugincontent = fh.readlines()
         try:
             self.assertIn('meta-selftest', srcfile, 'wrong bbpath plugin found')
-            for path in searchpath:
-                self._copy_file_with_cleanup(srcfile, path, 'lib', 'devtool')
+            searchpath = [
+                path for path in searchpath
+                if self._copy_file_with_cleanup(srcfile, path, 'lib', 'devtool')
+            ]
             result = runCmd("devtool --quiet count")
             self.assertEqual(result.output, '1')
             result = runCmd("devtool --quiet multiloaded")
             self.assertEqual(result.output, "no")
             for path in searchpath:
                 result = runCmd("devtool --quiet bbdir")
-                self.assertEqual(result.output, path)
+                self.assertEqual(os.path.realpath(result.output), os.path.realpath(path))
                 os.unlink(os.path.join(result.output, 'lib', 'devtool', 'bbpath.py'))
         finally:
             with open(srcfile, 'w') as fh:

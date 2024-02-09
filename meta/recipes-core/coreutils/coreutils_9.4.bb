@@ -16,6 +16,7 @@ inherit autotools gettext texinfo
 SRC_URI = "${GNU_MIRROR}/coreutils/${BP}.tar.xz \
            file://remove-usr-local-lib-from-m4.patch \
            file://0001-local.mk-fix-cross-compiling-problem.patch \
+           file://0001-posixtm-pacify-clang-18.patch \
            file://run-ptest \
            "
 SRC_URI[sha256sum] = "ea613a4cf44612326e917201bbbcdfbd301de21ffc3b59b6e5c07e040b275e52"
@@ -210,4 +211,10 @@ do_install_ptest () {
     sed -i s:@libdir@:${libdir}:g ${D}${PTEST_PATH}/run-ptest
 }
 
+do_install_ptest:append:libc-musl () {
+    # these tests fail due to bash on musl systems
+    # xmalloc: cannot allocate 16146 bytes
+    sed -i -e '/tests\/dd\/no-allocate.sh/d' ${D}${PTEST_PATH}/Makefile
+    sed -i -e '/tests\/split\/line-bytes.sh/d' ${D}${PTEST_PATH}/Makefile
+}
 FILES:${PN}-ptest += "${bindir}/getlimits"

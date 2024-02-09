@@ -7,13 +7,18 @@ faster with bmaptool than with traditional tools like "dd" or "cp"."
 HOMEPAGE = "https://github.com/01org/bmap-tools"
 SECTION = "console/utils"
 LICENSE = "GPL-2.0-only"
-LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRC_URI = "git://github.com/intel/${BPN};branch=main;protocol=https"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+SRC_URI = "git://github.com/intel/${BPN};branch=main;protocol=https \
+	file://0001-BmapCopy.py-fix-error-message.patch \
+	file://0002-CLI.py-fix-block-device-udev-race-condition.patch \
+	file://0003-BmapCopy.py-tweak-suggested-udev-rule.patch \
+	"
 
-SRCREV = "c0673962a8ec1624b5189dc1d24f33fe4f06785a"
+SRCREV = "d84a6fd202fe246a0bc19ed2082e41bcdd75fb13"
 S = "${WORKDIR}/git"
-BASEVER = "3.6"
+BASEVER = "3.7"
 PV = "${BASEVER}+git"
 
 UPSTREAM_CHECK_GITTAGREGEX = "v(?P<pver>\d+(\.\d+)+)"

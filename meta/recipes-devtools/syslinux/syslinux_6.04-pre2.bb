@@ -48,7 +48,7 @@ TARGET_LDFLAGS = ""
 SECURITY_LDFLAGS = ""
 LDFLAGS_SECTION_REMOVAL = ""
 
-CFLAGS:append = " -DNO_INLINE_FUNCS"
+CFLAGS:append = " -DNO_INLINE_FUNCS -Wno-error=implicit-function-declaration"
 
 EXTRA_OEMAKE = " \
 	BINDIR=${bindir} SBINDIR=${sbindir} LIBDIR=${libdir} \
@@ -62,6 +62,10 @@ EXTRA_OEMAKE = " \
 	NM="${NM}" \
 	RANLIB="${RANLIB}" \
 "
+
+# mtools allows non-root users to install syslinux
+PACKAGECONFIG ??= "mtools"
+PACKAGECONFIG[mtools] = ",,,"
 
 #
 # Tasks for native/nativesdk which just build the installer.
@@ -77,10 +81,15 @@ do_compile() {
 do_install() {
 	install -d ${D}${bindir}
 	install \
-		${B}/bios/mtools/syslinux \
 		${B}/bios/extlinux/extlinux \
 		${B}/bios/utils/isohybrid \
 		${D}${bindir}
+
+	if ${@bb.utils.contains("PACKAGECONFIG", "mtools", "true", "false", d)}; then
+		install ${B}/bios/mtools/syslinux ${D}${bindir}
+	else
+		install ${B}/bios/linux/syslinux ${D}${bindir}
+	fi
 }
 
 #
@@ -104,14 +113,12 @@ do_install:class-target() {
 	install -m 644 ${S}/bios/core/ldlinux.bss ${D}${datadir}/syslinux/
 }
 
-PACKAGES += "${PN}-nomtools ${PN}-extlinux ${PN}-mbr ${PN}-chain ${PN}-pxelinux ${PN}-isolinux ${PN}-misc"
+PACKAGES += "${PN}-extlinux ${PN}-mbr ${PN}-chain ${PN}-pxelinux ${PN}-isolinux ${PN}-misc"
 
-RDEPENDS:${PN} += "mtools"
-RDEPENDS:${PN}-nomtools += "libext2fs"
+RDEPENDS:${PN} += "${@bb.utils.contains("PACKAGECONFIG", "mtools", "mtools", "", d)}"
 RDEPENDS:${PN}-misc += "perl"
 
 FILES:${PN} = "${bindir}/syslinux"
-FILES:${PN}-nomtools = "${bindir}/syslinux-nomtools"
 FILES:${PN}-extlinux = "${sbindir}/extlinux"
 FILES:${PN}-mbr = "${datadir}/${BPN}/mbr.bin"
 FILES:${PN}-chain = "${datadir}/${BPN}/chain.c32"

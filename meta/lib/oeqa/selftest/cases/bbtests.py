@@ -232,7 +232,9 @@ INHERIT:remove = \"report-error\"
         self.assertLess(errorpos,continuepos, msg = "bitbake didn't pass do_fail_task. bitbake output: %s" % result.output)
 
     def test_non_gplv3(self):
-        self.write_config('INCOMPATIBLE_LICENSE = "GPL-3.0-or-later"')
+        self.write_config('''INCOMPATIBLE_LICENSE = "GPL-3.0-or-later"
+require conf/distro/include/no-gplv3.inc
+''')
         result = bitbake('selftest-ed', ignore_status=True)
         self.assertEqual(result.status, 0, "Bitbake failed, exit code %s, output %s" % (result.status, result.output))
         lic_dir = get_bb_var('LICENSE_DIRECTORY')
@@ -362,3 +364,14 @@ INHERIT:remove = \"report-error\"
 
         result = bitbake('gitunpackoffline-fail -c fetch', ignore_status=True)
         self.assertTrue(re.search("Recipe uses a floating tag/branch .* for repo .* without a fixed SRCREV yet doesn't call bb.fetch2.get_srcrev()", result.output), msg = "Recipe without PV set to SRCPV should have failed: %s" % result.output)
+
+    def test_unexpanded_variable_in_path(self):
+        """
+            Test that bitbake fails if directory contains unexpanded bitbake variable in the name
+        """
+        recipe_name = "gitunpackoffline"
+        self.write_config('PV:pn-gitunpackoffline:append = "+${UNDEFVAL}"')
+        result = bitbake('{}'.format(recipe_name), ignore_status=True)
+        self.assertGreater(result.status, 0, "Build should have failed if ${ is in the path")
+        self.assertTrue(re.search("ERROR: Directory name /.* contains unexpanded bitbake variable. This may cause build failures and WORKDIR polution",
+                                  result.output), msg = "mkdirhier with unexpanded variable should have failed: %s" % result.output)

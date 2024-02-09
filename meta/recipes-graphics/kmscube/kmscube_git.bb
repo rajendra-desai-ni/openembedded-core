@@ -10,12 +10,17 @@ DEPENDS = "virtual/libgles3 virtual/libgles2 virtual/egl libdrm virtual/libgbm"
 
 LIC_FILES_CHKSUM = "file://kmscube.c;beginline=1;endline=23;md5=8b309d4ee67b7315ff7381270dd631fb"
 
-SRCREV = "ea6c5d1eeefbfb0a1c27ab74a6e4621f1d9adf4c"
-SRC_URI = "git://gitlab.freedesktop.org/mesa/kmscube;branch=master;protocol=https"
+SRCREV = "96d63eb59e34c647cda1cbb489265f8c536ae055"
+SRC_URI = "git://gitlab.freedesktop.org/mesa/kmscube;branch=master;protocol=https \
+           file://0001-cube-gears-Change-header-file-to-GLES3-gl3.h.patch \
+           "
 
 UPSTREAM_CHECK_COMMITS = "1"
 
 S = "${WORKDIR}/git"
+
+BASEPV = "0.0.1"
+PV = "${BASEPV}+git"
 
 inherit meson pkgconfig features_check
 

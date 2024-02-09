@@ -57,11 +57,13 @@ PTESTS_FAST = "\
     pango \
     popt \
     python3-atomicwrites \
+    python3-attrs \
     python3-bcrypt \
     python3-calver \
     python3-hypothesis \
     python3-jinja2 \
     python3-jsonpointer \
+    python3-license-expression \
     python3-markupsafe \
     python3-more-itertools \
     python3-pluggy \
@@ -75,6 +77,7 @@ PTESTS_FAST = "\
     sed \
     slang \
     wayland \
+    xz \
     zlib \
     libexif \
 "
@@ -102,7 +105,6 @@ PTESTS_SLOW = "\
     libgcrypt \
     libmodule-build-perl \
     lttng-tools \
-    mdadm \
     openssh \
     openssl \
     parted \
@@ -119,8 +121,9 @@ PTESTS_SLOW = "\
     lz4 \
 "
 
-PTESTS_SLOW:remove:riscv64 = "valgrind"
-PTESTS_PROBLEMS:append:riscv64 = " valgrind"
+# python3 ptests hang on qemuriscv64
+PTESTS_SLOW:remove:riscv64 = "valgrind python3"
+PTESTS_PROBLEMS:append:riscv64 = " valgrind python3"
 PTESTS_SLOW:remove:riscv32 = "lttng-tools strace valgrind"
 PTESTS_PROBLEMS:append:riscv32 = " lttng-tools strace valgrind"
 PTESTS_SLOW:append:libc-musl = " libc-test"
@@ -133,6 +136,7 @@ PTESTS_PROBLEMS:append:x86 = " valgrind"
 #    ifupdown \ # Tested separately in lib/oeqa/selftest/cases/imagefeatures.py
 #    libinput \ # Tests need an unloaded system to be reliable
 #    libpam \ # Needs pam DISTRO_FEATURE
+#    mdadm \ # tests are flaky in AB.
 #    numactl \ # qemu not (yet) configured for numa; all tests are skipped
 #    libseccomp \ #  tests failed: 38; add to slow tests once addressed
 #    python3-numpy \ # requires even more RAM and (possibly) disk space; multiple failures
@@ -145,6 +149,7 @@ PTESTS_PROBLEMS = "\
     libinput \
     libpam \
     libseccomp \
+    mdadm \
     numactl \
     python3-license-expression \
     python3-numpy \
