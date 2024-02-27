@@ -54,11 +54,17 @@ SRC_URI = "https://curl.se/download/${BP}.tar.xz \
            file://CVE-2023-38545.patch \
            file://CVE-2023-38546.patch \
            file://CVE-2023-46218.patch \
+           file://CVE-2023-46219-0001.patch \
+           file://CVE-2023-46219-0002.patch \
+           file://CVE-2023-46219-0003.patch \
            "
 SRC_URI[sha256sum] = "0aaa12d7bd04b0966254f2703ce80dd5c38dbbd76af0297d3d690cdce58a583c"
 
 # Curl has used many names over the years...
 CVE_PRODUCT = "haxx:curl haxx:libcurl curl:curl curl:libcurl libcurl:libcurl daniel_stenberg:curl"
+
+# This CVE reports that apple had to upgrade curl because of other already reported CVEs
+CVE_CHECK_IGNORE += "CVE-2023-42915"
 
 inherit autotools pkgconfig binconfig multilib_header
 
