@@ -12,6 +12,7 @@ SRC_URI = "http://www.openssl.org/source/openssl-${PV}.tar.gz \
            file://0001-buildinfo-strip-sysroot-and-debug-prefix-map-from-co.patch \
            file://0001-Configure-do-not-tweak-mips-cflags.patch \
            file://0001-Added-handshake-history-reporting-when-test-fails.patch \
+           file://bti.patch \
            "
 
 SRC_URI:append:class-nativesdk = " \
@@ -95,6 +96,9 @@ do_configure () {
 		;;
 	linux-gnu64-x86_64)
 		target=linux-x86_64
+		;;
+	linux-loongarch64)
+		target=linux64-loongarch64
 		;;
 	linux-mips | linux-mipsel)
 		# specifying TARGET_CC_ARCH prevents openssl from (incorrectly) adding target architecture flags
@@ -257,5 +261,3 @@ CVE_PRODUCT = "openssl:openssl"
 
 CVE_VERSION_SUFFIX = "alphabetical"
 
-# Apache in meta-webserver is already recent enough
-CVE_STATUS[CVE-2019-0190] = "not-applicable-config: Only affects OpenSSL >= 1.1.1 in combination with Apache < 2.4.37"

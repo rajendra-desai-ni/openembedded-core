@@ -28,7 +28,6 @@ PTESTS_FAST = "\
     json-c \
     json-glib \
     libconvert-asn1-perl \
-    liberror-perl \
     libgpg-error\
     libnl \
     libpcre \
@@ -69,6 +68,7 @@ PTESTS_FAST = "\
     python3-pluggy \
     python3-pyasn1 \
     python3-pytz \
+    python3-pyyaml \
     python3-trove-classifiers \
     python3-wcwidth \
     python3-webcolors \
@@ -119,6 +119,7 @@ PTESTS_SLOW = "\
     util-linux \
     valgrind \
     lz4 \
+    libseccomp \
 "
 
 # python3 ptests hang on qemuriscv64
@@ -138,7 +139,6 @@ PTESTS_PROBLEMS:append:x86 = " valgrind"
 #    libpam \ # Needs pam DISTRO_FEATURE
 #    mdadm \ # tests are flaky in AB.
 #    numactl \ # qemu not (yet) configured for numa; all tests are skipped
-#    libseccomp \ #  tests failed: 38; add to slow tests once addressed
 #    python3-numpy \ # requires even more RAM and (possibly) disk space; multiple failures
 
 PTESTS_PROBLEMS = "\
@@ -148,7 +148,6 @@ PTESTS_PROBLEMS = "\
     ifupdown \
     libinput \
     libpam \
-    libseccomp \
     mdadm \
     numactl \
     python3-license-expression \

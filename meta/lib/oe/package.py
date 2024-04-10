@@ -639,24 +639,32 @@ def split_locales(d):
 
     packages = (d.getVar('PACKAGES') or "").split()
 
-    datadir = d.getVar('datadir')
-    if not datadir:
-        bb.note("datadir not defined")
-        return
-
     dvar = d.getVar('PKGD')
     pn = d.getVar('LOCALEBASEPN')
 
-    if pn + '-locale' in packages:
-        packages.remove(pn + '-locale')
+    try:
+        locale_index = packages.index(pn + '-locale')
+        packages.pop(locale_index)
+    except ValueError:
+        locale_index = len(packages)
 
-    localedir = os.path.join(dvar + datadir, 'locale')
+    localepaths = []
+    locales = set()
+    for localepath in (d.getVar('LOCALE_PATHS') or "").split():
+        localedir = dvar + localepath
+        if not cpath.isdir(localedir):
+            bb.debug(1, 'No locale files in %s' % localepath)
+            continue
 
-    if not cpath.isdir(localedir):
+        localepaths.append(localepath)
+        with os.scandir(localedir) as it:
+            for entry in it:
+                if entry.is_dir():
+                    locales.add(entry.name)
+
+    if len(locales) == 0:
         bb.debug(1, "No locale files in this package")
         return
-
-    locales = os.listdir(localedir)
 
     summary = d.getVar('SUMMARY') or pn
     description = d.getVar('DESCRIPTION') or ""
@@ -665,8 +673,12 @@ def split_locales(d):
     for l in sorted(locales):
         ln = legitimize_package_name(l)
         pkg = pn + '-locale-' + ln
-        packages.append(pkg)
-        d.setVar('FILES:' + pkg, os.path.join(datadir, 'locale', l))
+        packages.insert(locale_index, pkg)
+        locale_index += 1
+        files = []
+        for localepath in localepaths:
+            files.append(os.path.join(localepath, l))
+        d.setVar('FILES:' + pkg, " ".join(files))
         d.setVar('RRECOMMENDS:' + pkg, '%svirtual-locale-%s' % (mlprefix, ln))
         d.setVar('RPROVIDES:' + pkg, '%s-locale %s%s-translation' % (pn, mlprefix, ln))
         d.setVar('SUMMARY:' + pkg, '%s - %s translations' % (summary, l))
@@ -1648,7 +1660,7 @@ def process_shlibs(pkgfiles, d):
 
         if (file.endswith(".dll") or file.endswith(".exe")):
             # use objdump to search for "DLL Name: .*\.dll"
-            p = subprocess.Popen([d.expand("${HOST_PREFIX}objdump"), "-p", file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen([d.expand("${OBJDUMP}"), "-p", file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
             # process the output, grabbing all .dll names
             if p.returncode == 0:

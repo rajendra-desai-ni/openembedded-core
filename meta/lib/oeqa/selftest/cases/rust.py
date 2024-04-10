@@ -102,6 +102,9 @@ class RustSelfTestSystemEmulated(OESelftestTestCase, OEPTestResultTestCase):
                             'tests/codegen/non-terminate/nonempty-infinite-loop.rs',
                             'tests/codegen/noreturn-uninhabited.rs',
                             'tests/codegen/repr-transparent-aggregates-3.rs',
+                            'tests/codegen/riscv-abi/call-llvm-intrinsics.rs',
+                            'tests/codegen/riscv-abi/riscv64-lp64f-lp64d-abi.rs',
+                            'tests/codegen/riscv-abi/riscv64-lp64d-abi.rs',
                             'tests/codegen/sse42-implies-crc32.rs',
                             'tests/codegen/thread-local.rs',
                             'tests/codegen/uninit-consts.rs',
@@ -213,13 +216,16 @@ class RustSelfTestSystemEmulated(OESelftestTestCase, OEPTestResultTestCase):
             cmd = cmd + " export RUST_TARGET_PATH=%s/rust-targets;" % rustlibpath
             # Trigger testing.
             cmd = cmd + " export TEST_DEVICE_ADDR=\"%s:12345\";" % qemu.ip
-            cmd = cmd + " cd %s; python3 src/bootstrap/bootstrap.py test %s --target %s > summary.txt 2>&1;" % (builddir, testargs, targetsys)
-            runCmd(cmd)
+            cmd = cmd + " cd %s; python3 src/bootstrap/bootstrap.py test %s --target %s" % (builddir, testargs, targetsys)
+            retval = runCmd(cmd)
             end_time = time.time()
 
+            resultlog = rustlibpath + "/results-log.txt"
+            with open(resultlog, "w") as f:
+                f.write(retval.output)
+
             ptestsuite = "rust"
-            self.ptest_section(ptestsuite, duration = int(end_time - start_time), logfile = builddir + "/summary.txt")
-            filename = builddir + "/summary.txt"
-            test_results = parse_results(filename)
+            self.ptest_section(ptestsuite, duration = int(end_time - start_time), logfile=resultlog)
+            test_results = parse_results(resultlog)
             for test in test_results:
                 self.ptest_result(ptestsuite, test, test_results[test])

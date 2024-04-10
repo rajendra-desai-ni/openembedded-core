@@ -201,8 +201,7 @@
     "compression": {
         "summary": "Python high-level compression support",
         "rdepends": [
-            "core",
-            "shell"
+            "core"
         ],
         "files": [
             "${libdir}/python${PYTHON_MAJMIN}/gzip.py",
@@ -250,6 +249,7 @@
             "${libdir}/python${PYTHON_MAJMIN}/copy.py",
             "${libdir}/python${PYTHON_MAJMIN}/copyreg.py",
             "${libdir}/python${PYTHON_MAJMIN}/csv.py",
+            "${libdir}/python${PYTHON_MAJMIN}/dataclasses.py",
             "${libdir}/python${PYTHON_MAJMIN}/dis.py",
             "${libdir}/python${PYTHON_MAJMIN}/encodings",
             "${libdir}/python${PYTHON_MAJMIN}/encodings/aliases.py",
@@ -369,6 +369,7 @@
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/copy.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/copyreg.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/csv.*.pyc",
+            "${libdir}/python${PYTHON_MAJMIN}/__pycache__/dataclasses.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/dis.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/enum.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/fnmatch.*.pyc",
@@ -523,7 +524,6 @@
         "rdepends": [
             "core",
             "pprint",
-            "profile",
             "shell",
             "stringold"
         ],
@@ -575,7 +575,6 @@
             "debugger",
             "difflib",
             "pprint",
-            "profile",
             "shell",
             "stringold",
             "unittest"
@@ -995,8 +994,7 @@
     "pprint": {
         "summary": "Python pretty-print support",
         "rdepends": [
-            "core",
-            "profile"
+            "core"
         ],
         "files": [
             "${libdir}/python${PYTHON_MAJMIN}/pprint.py"
@@ -1012,14 +1010,12 @@
         ],
         "files": [
             "${libdir}/python${PYTHON_MAJMIN}/cProfile.py",
-            "${libdir}/python${PYTHON_MAJMIN}/dataclasses.py",
             "${libdir}/python${PYTHON_MAJMIN}/lib-dynload/_lsprof.*.so",
             "${libdir}/python${PYTHON_MAJMIN}/profile.py",
             "${libdir}/python${PYTHON_MAJMIN}/pstats.py"
         ],
         "cached": [
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/cProfile.*.pyc",
-            "${libdir}/python${PYTHON_MAJMIN}/__pycache__/dataclasses.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/profile.*.pyc",
             "${libdir}/python${PYTHON_MAJMIN}/__pycache__/pstats.*.pyc"
         ]
@@ -1189,7 +1185,6 @@
             "netclient",
             "numbers",
             "pprint",
-            "profile",
             "stringold"
         ],
         "files": [

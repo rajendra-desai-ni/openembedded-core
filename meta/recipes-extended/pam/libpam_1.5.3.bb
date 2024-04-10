@@ -24,6 +24,7 @@ SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/Linux-PAM-${PV}.tar.xz \
            file://0001-examples-Replace-use-of-termio.h-with-termios.h.patch \
            file://run-ptest \
            file://pam-volatiles.conf \
+           file://0001-pam_namespace-include-stdint-h.patch \
            "
 
 SRC_URI[sha256sum] = "7ac4b50feee004a9fa88f1dfd2d2fa738a82896763050cd773b3c54b0a818283"
@@ -163,11 +164,9 @@ do_install() {
 }
 
 do_install_ptest() {
-    if [ ${PTEST_ENABLED} = "1" ]; then
-        mkdir -p ${D}${PTEST_PATH}/tests
-        install -m 0755 ${B}/tests/.libs/* ${D}${PTEST_PATH}/tests
-        install -m 0644 ${S}/tests/confdir ${D}${PTEST_PATH}/tests
-    fi
+    mkdir -p ${D}${PTEST_PATH}/tests
+    install -m 0755 ${B}/tests/.libs/* ${D}${PTEST_PATH}/tests
+    install -m 0644 ${S}/tests/confdir ${D}${PTEST_PATH}/tests
 }
 
 pkg_postinst:${PN}() {
