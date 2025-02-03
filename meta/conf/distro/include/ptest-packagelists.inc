@@ -74,6 +74,7 @@ PTESTS_FAST = "\
     python3-webcolors \
     qemu \
     quilt \
+    run-postinsts \
     sed \
     slang \
     wayland \
